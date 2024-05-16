@@ -13,12 +13,12 @@
 namespace BetterBrief;
 
 use SilverStripe\Forms\FormField;
+use SilverStripe\ORM\ArrayList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\Forms\TextField;
 use SilverStripe\View\Requirements;
 use SilverStripe\ORM\DataObjectInterface;
-use SilverStripe\Forms\FieldList;
 use SilverStripe\Core\Convert;
 
 class GoogleMapField extends FormField {
@@ -49,14 +49,15 @@ class GoogleMapField extends FormField {
 	 * The merged version of the default and user specified options
 	 * @var array
 	 */
-	protected $options = array();
+	protected $options = [];
 
 	/**
 	 * @param DataObject $data The controlling dataobject
 	 * @param string $title The title of the field
 	 * @param array $options Various settings for the field
 	 */
-	public function __construct(DataObject $data, $title, $options = array()) {
+	public function __construct(DataObject $data, $title, $options = array())
+    {
 		$this->data = $data;
 
 		// Set up fieldnames
@@ -68,7 +69,8 @@ class GoogleMapField extends FormField {
 	}
 
 	// Auto generate a name
-	public function getName() {
+	public function getName()
+    {
 		$fieldNames = $this->getOption('field_names');
 		return sprintf(
 			'%s_%s_%s',
@@ -82,7 +84,8 @@ class GoogleMapField extends FormField {
 	 * Merge options preserving the first level of array keys
 	 * @param array $options
 	 */
-	public function setupOptions(array $options) {
+	public function setupOptions(array $options)
+    {
 		$this->options = static::config()->default_options;
 		foreach($this->options as $name => &$value) {
 			if(isset($options[$name])) {
@@ -98,9 +101,10 @@ class GoogleMapField extends FormField {
 
 	/**
 	 * Set up child hidden fields, and optionally the search box.
-	 * @return FieldList the children
+	 * @return ArrayList the children
 	 */
-	public function setupChildren() {
+	public function setupChildren()
+    {
 		$name = $this->getName();
 
 		// Create the latitude/longitude hidden fields
@@ -126,30 +130,28 @@ class GoogleMapField extends FormField {
 			'Bounds',
 			$this->recordFieldData('Bounds')
 		)->addExtraClass('googlemapfield-boundsfield no-change-track');
-		$this->children = new FieldList(
-			$this->latField,
-			$this->lngField,
-			$this->zoomField,
-			$this->boundsField
-		);
-
-		if($this->options['show_search_box']) {
-			$this->children->push(
-				TextField::create('Search')
-				->addExtraClass('googlemapfield-searchfield')
-				->setAttribute('placeholder', 'Search for a location')
-			);
-		}
+		$this->children = new ArrayList([
+            $this->latField,
+            $this->lngField,
+            $this->zoomField,
+            $this->boundsField
+        ]);
 
 		return $this->children;
 	}
+
+    public function getShowSeachBox()
+    {
+        return $this->options['show_search_box'];
+    }
 
 	/**
 	 * @param array $properties
 	 * @see https://developers.google.com/maps/documentation/javascript/reference
 	 * {@inheritdoc}
 	 */
-	public function Field($properties = array()) {
+	public function Field($properties = array())
+    {
 		$jsOptions = array(
 			'coords' => array(
 				$this->recordFieldData('Latitude'),
@@ -171,9 +173,11 @@ class GoogleMapField extends FormField {
 	 * Set up and include any frontend requirements
 	 * @return void
 	 */
-	protected function requireDependencies() {
+	protected function requireDependencies()
+    {
 		$gmapsParams = array(
 			'callback' => 'googlemapfieldInit',
+            'loading' => 'async',
 		);
 		if($key = $this->getOption('api_key')) {
 			$gmapsParams['key'] = $key;
@@ -187,7 +191,8 @@ class GoogleMapField extends FormField {
 	/**
 	 * {@inheritdoc}
 	 */
-	public function setValue($record, $data = null) {
+	public function setValue($record, $data = null)
+    {
 		$this->latField->setValue(
 			$record['Latitude']
 		);
@@ -207,7 +212,8 @@ class GoogleMapField extends FormField {
 	 * Take the latitude/longitude fields and save them to the DataObject.
 	 * {@inheritdoc}
 	 */
-	public function saveInto(DataObjectInterface $record) {
+	public function saveInto(DataObjectInterface $record)
+    {
 		$record->setCastedField($this->childFieldName('Latitude'), $this->latField->dataValue());
 		$record->setCastedField($this->childFieldName('Longitude'), $this->lngField->dataValue());
 		$record->setCastedField($this->childFieldName('Zoom'), $this->zoomField->dataValue());
@@ -216,23 +222,27 @@ class GoogleMapField extends FormField {
 	}
 
 	/**
-	 * @return FieldList The Latitude/Longitude fields
+	 * @return ArrayList The Latitude/Longitude fields
 	 */
-	public function getChildFields() {
+	public function getChildFields()
+    {
 		return $this->children;
 	}
 
-	protected function childFieldName($name) {
+	protected function childFieldName($name)
+    {
 		$fieldNames = $this->getOption('field_names');
 		return $fieldNames[$name];
 	}
 
-	protected function recordFieldData($name) {
+	protected function recordFieldData($name)
+    {
 		$fieldName = $this->childFieldName($name);
 		return $this->data->$fieldName ?: $this->getDefaultValue($name);
 	}
 
-	public function getDefaultValue($name) {
+	public function getDefaultValue($name)
+    {
 		$fieldValues = $this->getOption('default_field_values');
 		return isset($fieldValues[$name]) ? $fieldValues[$name] : null;
 	}
@@ -240,7 +250,8 @@ class GoogleMapField extends FormField {
 	/**
 	 * @return string The VALUE of the Latitude field
 	 */
-	public function getLatData() {
+	public function getLatData()
+    {
 		$fieldNames = $this->getOption('field_names');
 		return $this->data->$fieldNames['Latitude'];
 	}
@@ -248,7 +259,8 @@ class GoogleMapField extends FormField {
 	/**
 	 * @return string The VALUE of the Longitude field
 	 */
-	public function getLngData() {
+	public function getLngData()
+    {
 		$fieldNames = $this->getOption('field_names');
 		return $this->data->$fieldNames['Longitude'];
 	}
@@ -258,7 +270,8 @@ class GoogleMapField extends FormField {
 	 * @param string $name The name of the option
 	 * @return mixed
 	 */
-	public function getOption($name) {
+	public function getOption($name)
+    {
 		// Quicker execution path for "."-free names
 		if (strpos($name, '.') === false) {
 			if (isset($this->options[$name])) return $this->options[$name];
@@ -284,7 +297,8 @@ class GoogleMapField extends FormField {
 	 * @param mixed $val The value of said option
 	 * @return $this
 	 */
-	public function setOption($name, $val) {
+	public function setOption($name, $val)
+    {
 		// Quicker execution path for "."-free names
 		if(strpos($name,'.') === false) {
 			$this->options[$name] = $val;
@@ -302,5 +316,4 @@ class GoogleMapField extends FormField {
 		}
 		return $this;
 	}
-
 }
